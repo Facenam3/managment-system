@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Task;
+use App\Models\Category;
+use App\Models\Project;
+use App\Enums\TaskStatus;
 
 class TaskController extends Controller
 {
@@ -12,7 +15,37 @@ class TaskController extends Controller
      */
     public function index()
     {
-        //
+        $tasks = Task::all();
+        return view('tasks.tasks', ['tasks' => $tasks]);
+    }
+
+    public function create() {
+        $allProjects = Project::all();
+        $allCategories = Category::all();
+        $statuses = TaskStatus::cases();
+
+        return view('tasks.task-create', [
+            'projects' => $allProjects,
+            'categories' => $allCategories,
+            'statuses' => $statuses
+        ]);
+    }
+
+    public function edit($id) {
+        $task = Task::findOrFail($id);
+        $allProjects = Project::all();
+        $allCategories = Category::all();
+        $statuses = TaskStatus::cases();
+
+        $task->due_date = $task->due_date ? \Carbon\Carbon::parse($task->due_date)->format('Y-m-d') : null;
+
+        return view('tasks.task-edit', [
+            'task' => $task,
+            'projects' => $allProjects,
+            'categories' => $allCategories,
+            'statuses' => $statuses
+            
+        ]);
     }
 
     public function allTasks() {
@@ -30,21 +63,21 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         $validate = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:todo,in_progress,done'],
-            'due_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'status' => ['required', 'in:open,in_progress,completed'],
+            'due_date' => ['required', 'date'],
             'project_id' => ['required', 'exists:projects,id'],
             'category_id' => ['required', 'exists:categories,id']
         ]);
 
         $task = Task::create([
-            'title' => $validate['title'],
-            'description' => $validate['description'],
-            'status' => $validate['status'],
-            'due_date' => $validate['due_date'],
-            'project_id' => $validate['project_id'],
-            'category_id' => $validate['category_id'],
+            'name' => $request->name,
+            'description' => $request->description,
+            'status' => $request->status,
+            'due_date' => $request->due_date,
+            'project_id' => $request->project_id,
+            'category_id' => $request->category_id,
         ]);
 
         return response()->json([
@@ -128,7 +161,27 @@ class TaskController extends Controller
     }
     public function update(Request $request, string $id)
     {
-        //
+       $task = Task::findOrFail($id);
+
+       $validate = $request->validate([
+        'name' => 'sometimes|string|max:255',
+        'project_id' => 'sometimes|exists:projects,id',
+        'category_id' => 'sometimes|exists:categories,id',
+        'due_date' => 'sometimes|date',
+        'description' => 'sometimes|string',
+        'status' => 'sometimes|string'
+       ]);
+
+       $task->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'status' => $request->status,
+            'due_date' => $request->due_date,
+            'project_id' => $request->project_id,
+            'category_id' => $request->category_id,
+       ]);
+
+       return redirect()->route('tasks.all');
     }
 
     /**
