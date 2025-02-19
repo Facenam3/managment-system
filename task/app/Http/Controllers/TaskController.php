@@ -1,0 +1,141 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Task;
+
+class TaskController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //
+    }
+
+    public function allTasks() {
+        $allTasks = Task::all();
+
+        return response()->json([
+            'message' => 'Returnin all Tasks',
+            'task' => $allTasks
+        ],201);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validate = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'in:todo,in_progress,done'],
+            'due_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'project_id' => ['required', 'exists:projects,id'],
+            'category_id' => ['required', 'exists:categories,id']
+        ]);
+
+        $task = Task::create([
+            'title' => $validate['title'],
+            'description' => $validate['description'],
+            'status' => $validate['status'],
+            'due_date' => $validate['due_date'],
+            'project_id' => $validate['project_id'],
+            'category_id' => $validate['category_id'],
+        ]);
+
+        return response()->json([
+            'message' => 'Task created successfully',
+            'task' => $task
+        ],201);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function filterByStatus(Request $request)
+    {
+        $request->validate([
+            'status' => ['required', 'in:todo,in_progress,done'],
+        ]);
+
+        $status = $request->input('status');
+
+        $tasks = Task::where('status', $status)->get();
+
+        return response()->json([
+            'message' => 'Status Tasks retrieved successfully',
+            'tasks' => $tasks
+        ],201);
+    }
+
+    public function filterByCategory(Request $request)
+    {
+        $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+        ]);
+
+        $categoryId = $request->input('category_id');
+
+        $tasks = Task::where('category_id', $categoryId)->get();
+
+        return response()->json([
+            'message' => 'Tasks filtered successfully',
+            'tasks' => $tasks
+        ], 200);
+    }
+
+    public function listTasks(Request $request) {
+        $request->validate([
+            'status' => ['required', 'in:todo,in_progress,done'],
+            'category_id' => ['required', 'exists:categories,id'],
+        ]);
+
+        $status = $request->input('status');
+        $categoryId = $request->input('category_id');
+
+
+        $tasks = Task::where('status', $status)
+                 ->where('category_id', $categoryId)
+                 ->get();
+
+        return response()->json([
+            'message' => 'Tasks retrieved successfully',
+            'tasks' => $tasks
+        ], 200);
+    }
+    /**
+     * Update the specified resource in storage.
+     */
+    public function markTaskCompleted(Request $request, $id) {
+        $task = Task::findOrFail($id);
+
+        if ($task->status === 'done') {
+            return response()->json([
+                'message' => 'Task is already marked as completed'
+            ], 400);
+        }
+
+        $task->update(['status' => 'done']);
+
+        return response()->json([
+            'message' => 'Task marked as completed successfully',
+            'task' => $task
+        ], 200);
+    }
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
+    }
+}
