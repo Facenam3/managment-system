@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
+use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,6 @@ Route::prefix('categories')->group(function(){
 Route::prefix('tasks')->group(function(){
     Route::get('/tasks/all', [TaskController::class, 'allTasks']);
     Route::post('/tasks/create' ,[TaskController::class, 'store']);
-    Route::get('/tasks/filter', [ProjectController::class, 'listTasks']);
+    Route::get('/tasks/filter', [TaskController::class, 'listTasks']);
     Route::patch('/{task}/complete', [TaskController::class, 'markAsCompleted']);
 });
